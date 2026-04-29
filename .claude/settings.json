@@ -1,0 +1,219 @@
+{
+  "_comment": "Morpheus template settings.json. Per-user secrets, env vars, and absolute paths live in .claude/settings.local.json (gitignored, written by /onboard). The `_gated_by` key marks hooks that depend on optional extensions (skipped when the named extension is disabled in .harness-onboarded).",
+
+  "permissions": {
+    "allow": [
+      "Bash(scripts/utils/*)",
+      "Bash(.claude/hooks/*)",
+      "Bash(claude --version)",
+      "Bash(node --version)",
+      "Bash(git --version)",
+      "Bash(bash --version)",
+      "Bash(pwsh --version)",
+      "Bash(powershell.exe --version)",
+      "Bash(echo $PATH)",
+      "Read(**)",
+      "Edit(notes/**)",
+      "Edit(hub/**)",
+      "Edit(memory/**)",
+      "Edit(ingest/**)",
+      "Edit(knowledge/**)",
+      "Edit(.claude/**)",
+      "Edit(docs/**)",
+      "Edit(scripts/**)",
+      "Write(notes/**)",
+      "Write(hub/**)",
+      "Write(memory/**)",
+      "Write(ingest/**)",
+      "Write(knowledge/**)",
+      "Write(.claude/**)",
+      "Write(docs/**)",
+      "Write(scripts/**)",
+      "Write(INDEX.md)",
+      "Write(CLAUDE.md)",
+      "Write(README.md)",
+      "Write(CONTRIBUTING.md)",
+      "Write(.harness-onboarded)",
+      "Glob(**)",
+      "Grep(**)"
+    ],
+    "deny": []
+  },
+
+  "hooks": {
+    "InstructionsLoaded": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f INDEX.md ]; then ENTRIES=$(grep -c '^- ' INDEX.md 2>/dev/null || echo 0); echo \"[HOOK:InstructionsLoaded] FIRED -- INDEX.md loaded ($ENTRIES entries)\"; cat INDEX.md; else echo '[HOOK:InstructionsLoaded] SKIPPED -- INDEX.md not found'; fi",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/utils/ensure-note.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "if [ -f hub/state/active-tasks.md ]; then ACTIVE_COUNT=$(grep -c '^## ' hub/state/active-tasks.md 2>/dev/null || echo 0); echo \"[HOOK:SessionStart] FIRED -- active-tasks.md loaded ($ACTIVE_COUNT in-flight tasks)\"; cat hub/state/active-tasks.md; else bash scripts/utils/generate-active-tasks.sh 2>/dev/null; cat hub/state/active-tasks.md 2>/dev/null || echo '[HOOK:SessionStart] SKIPPED -- no staging tasks found'; fi",
+            "timeout": 10000
+          },
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/handoff-validator.ps1",
+            "timeout": 8000
+          },
+          {
+            "type": "command",
+            "command": "if [ ! -f .harness-onboarded ]; then echo '[ONBOARDING] This appears to be a fresh clone. Run /onboard to configure identity, paths, and optional extensions.'; fi",
+            "timeout": 2000
+          }
+        ]
+      }
+    ],
+
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/prompt-context-loader.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/skill-assessor.sh",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+
+    "PreToolUse": [
+      {
+        "matcher": "EnterPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/plan-mode-context.sh",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/prepend-reminder.sh",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/update-index.sh",
+            "timeout": 3000
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/daily-note-watch.sh",
+            "timeout": 3000
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/utils/generate-active-tasks.sh || true",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/feature-change-detector.sh",
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/health-check.sh",
+            "timeout": 3000
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/state-frontmatter-validator.ps1",
+            "timeout": 8000
+          },
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/plan-compliance-audit.ps1",
+            "timeout": 8000
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "_gated_by": "ext.planner",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/planner-push-queue-writer.sh",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/protocol-execution-audit.ps1",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/task-discipline-audit.ps1",
+            "timeout": 10000
+          },
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/daily-note-check.ps1",
+            "timeout": 10000
+          },
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/utils/generate-harness-metrics.ps1",
+            "timeout": 15000
+          }
+        ]
+      }
+    ]
+  },
+
+  "statusLine": {
+    "type": "command",
+    "command": "bash scripts/utils/statusline.sh"
+  }
+}

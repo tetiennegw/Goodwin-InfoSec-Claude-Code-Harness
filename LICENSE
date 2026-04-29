@@ -1,0 +1,16 @@
+PROPRIETARY — Goodwin Procter LLP InfoSec Internal Use
+
+This template repository is intended exclusively for Goodwin Procter LLP
+employees, contractors, and authorized agents. It is NOT licensed for
+public use, modification, or redistribution outside Goodwin.
+
+This file is a placeholder pending review by Goodwin Legal. Until that
+review completes:
+- DO NOT fork this repo to a non-Goodwin GitHub organization
+- DO NOT redistribute the contents to non-Goodwin parties
+- DO NOT include this template in any open-source project
+
+For questions about license terms, contact Goodwin InfoSec leadership
+(currently {{team.manager.name}} via {{team.manager.email}}).
+
+(c) 2026 Goodwin Procter LLP. All rights reserved.
