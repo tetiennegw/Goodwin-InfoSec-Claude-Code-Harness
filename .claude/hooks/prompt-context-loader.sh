@@ -131,8 +131,33 @@ fi
 
 CURRENT_DATETIME=$(date '+%I:%M %p · %Y-%m-%d · %A')
 
+ORANGE=$'\033[38;5;208m'
+RESET=$'\033[0m'
+
 cat <<EOF
 Time: ${CURRENT_DATETIME}
-INSTRUCTION: You MUST echo the Time line above as the FIRST line of your chat response, formatted as: 🟧  **Time: ${CURRENT_DATETIME}**  🟧 (note: two spaces between each 🟧 and the bold text for breathing room; the orange squares are a visual stand-in for orange background — true terminal background colors cannot be set via this hook output channel)
+INSTRUCTION: You MUST begin EVERY chat response with these two elements in this exact order, before any other text:
+
+1. The Morpheus ASCII banner inside a fenced code block (triple-backtick fences). The block must contain EXACTLY these 9 lines, preserving leading spaces and characters verbatim:
+
+\`\`\`
+EOF
+cat <<'BANNER'
+                                __
+ /'\_/`\                       /\ \
+/\      \    ___   _ __   _____\ \ \___      __   __  __    ____
+\ \ \__\ \  / __`\/\'__\/\ '__`\ \  _ `\  /'__`\/\ \/\ \  /',__\
+ \ \ \_/\ \/\ \L\ \ \ \/ \ \ \L\ \ \ \ \ \/\  __/\ \ \_\ \/\__, `\
+  \ \_\\ \_\ \____/\ \_\  \ \ ,__/\ \_\ \_\ \____\\ \____/\/\____/
+   \/_/ \/_/\/___/  \/_/   \ \ \/  \/_/\/_/\/____/ \/___/  \/___/
+                            \ \_\
+                             \/_/
+BANNER
+cat <<EOF
+\`\`\`
+
+2. Immediately after the code block, the time line formatted as: 🟧  **Time: ${CURRENT_DATETIME}**  🟧 (two spaces between each 🟧 and the bold text for breathing room; orange squares are a visual stand-in for orange background — true terminal colors cannot be set via this hook channel).
+
+Both elements render in Tyler's terminal as part of your reply. Hook stdout is only visible to you, not Tyler — without echoing the banner, Tyler cannot see it.
 ${INGEST_OVERRIDE}${APPROVAL_OVERRIDE}${PLANNER_OVERRIDE}
 EOF
