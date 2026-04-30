@@ -16,6 +16,7 @@
 #   1 = bad args / missing inputs
 #   2 = post-substitution validation failed (residual {{ tokens)
 # Changelog (max 10):
+#   2026-04-29 | morpheus-templatize-port | morpheus (P5-bugfix) | Fixed get_value() no-jq fallback bug: previous version stripped to last dotted segment + grep'd head -1, so harness.name / team.manager.name / user.name all resolved to first "name" in JSON (typically user.name). Replaced with namespace-aware awk JSON-path parser that tracks object scope via a stack. Discovered during real-world /onboard test in fresh clone — 5 files got user.name written where harness.name / team.manager.name were intended.
 #   2026-04-29 | morpheus-templatize-port | builder (Phase 5 R3) | Created cross-platform substitution engine (bash variant).
 # ============================================================
 
@@ -72,8 +73,15 @@ SANITIZE_FILES=(
 )
 
 # ---- key extraction helper ----
-# Reads a flat dotted key (e.g., user.name) from substitutions JSON.
-# Tries jq first (preferred), falls back to grep+sed.
+# Reads a dotted key (e.g., user.name, team.manager.name, harness.name) from
+# substitutions JSON. Tries jq first (preferred), falls back to a namespace-aware
+# awk JSON-path parser. The fallback tracks current object path via a stack so
+# nested dotted keys resolve to the right scope (NOT just the first matching
+# leaf-segment occurrence).
+#
+# Bug history: prior fallback used "${key##*.}" + grep + head -1 which collapsed
+# all *.name keys to the first "name" field encountered (typically user.name).
+# Fixed 2026-04-29 — see Changelog.
 get_value() {
   local key="$1"
   local val=""
@@ -82,12 +90,48 @@ get_value() {
     local jq_path=".$key"
     val=$(jq -r "$jq_path // empty" "$SUBS_JSON" 2>/dev/null || echo "")
   else
-    # Fallback: shell grep+sed for simple key:value pairs.
-    # Only handles single-line "key": "value" pairs at top level of nested objects.
-    # Format: walk the JSON for "<last_segment>": "<value>" within the matching parent object.
-    local last_seg
-    last_seg="${key##*.}"
-    val=$(grep -E "\"$last_seg\"\s*:\s*\"" "$SUBS_JSON" | head -1 | sed -E 's/.*"'"$last_seg"'"\s*:\s*"([^"]*)".*/\1/')
+    # Namespace-aware no-jq fallback. Awk walks the JSON line by line,
+    # tracking the current object path via a stack. Works for prettily-formatted
+    # JSON (one key per line) — which is what /onboard emits.
+    val=$(awk -v target="$key" '
+      function pop_path() {
+        if (path == "") return
+        n = split(path, parts, ".")
+        new = ""
+        for (i = 1; i < n; i++) new = (new == "") ? parts[i] : new "." parts[i]
+        path = new
+      }
+      BEGIN { path = "" }
+      {
+        # Object opening: "key": { (with optional trailing whitespace)
+        if ($0 ~ /^[[:space:]]*"[^"]+"[[:space:]]*:[[:space:]]*\{[[:space:]]*$/) {
+          line = $0
+          sub(/^[[:space:]]*"/, "", line)
+          sub(/"[[:space:]]*:.*/, "", line)
+          path = (path == "") ? line : path "." line
+          next
+        }
+        # Object closing: } or },
+        if ($0 ~ /^[[:space:]]*\}[[:space:]]*,?[[:space:]]*$/) {
+          pop_path()
+          next
+        }
+        # Leaf string value: "key": "value" (with optional trailing comma)
+        if ($0 ~ /^[[:space:]]*"[^"]+"[[:space:]]*:[[:space:]]*"/) {
+          k = $0
+          sub(/^[[:space:]]*"/, "", k)
+          sub(/"[[:space:]]*:.*/, "", k)
+          full = (path == "") ? k : path "." k
+          if (full == target) {
+            v = $0
+            sub(/^[[:space:]]*"[^"]+"[[:space:]]*:[[:space:]]*"/, "", v)
+            sub(/"[[:space:]]*,?[[:space:]]*$/, "", v)
+            print v
+            exit
+          }
+        }
+      }
+    ' "$SUBS_JSON" 2>/dev/null)
   fi
   echo "$val"
 }
