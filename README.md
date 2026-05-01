@@ -1,89 +1,181 @@
-# {{harness.name}} — Orchestration Discipline for Claude Code (Goodwin InfoSec Edition)
+<div align="center">
 
-A Goodwin-internal forkable harness that turns Claude Code into a disciplined orchestrator: scope-classified work, plan-mode-gated execution, audited task discipline, and a sub-agent workflow that writes artifacts to disk instead of bloating the conversation. Pairs with **Neo** (Goodwin's internal Claude-powered SOC agent) — Morpheus orchestrates work, Neo executes SOC investigations.
+```
+                                __
+ /'\_/`\                       /\ \
+/\      \    ___   _ __   _____\ \ \___      __   __  __    ____
+\ \ \__\ \  / __`\/\'__\/\ '__`\ \  _ `\  /'__`\/\ \/\ \  /',__\
+ \ \ \_/\ \/\ \L\ \ \ \/ \ \ \L\ \ \ \ \ \/\  __/\ \ \_\ \/\__, `\
+  \ \_\\ \_\ \____/\ \_\  \ \ ,__/\ \_\ \_\ \____\\ \____/\/\____/
+   \/_/ \/_/\/___/  \/_/   \ \ \/  \/_/\/_/\/____/ \/___/  \/___/
+                            \ \_\
+                             \/_/
+```
 
-> **Status**: Goodwin InfoSec internal use only. See `LICENSE` for terms.
-> **Audience**: Goodwin Procter LLP InfoSec teammates, contractors, and authorized agents.
+### Orchestration Discipline for Claude Code
+
+*Built by Goodwin InfoSec &mdash; for Goodwin InfoSec*
+
+![Status](https://img.shields.io/badge/status-active-brightgreen?style=flat-square)
+![Platform](https://img.shields.io/badge/platform-Windows%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
+![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?style=flat-square&logo=powershell&logoColor=white)
+![Claude Code](https://img.shields.io/badge/Claude%20Code-required-D34D25?style=flat-square&logo=anthropic&logoColor=white)
+![Audience](https://img.shields.io/badge/audience-Goodwin%20InfoSec-2D3539?style=flat-square)
+![License](https://img.shields.io/badge/license-proprietary-C8922A?style=flat-square)
+
+</div>
 
 ---
 
-## 1. What is {{harness.name}}?
+## What is Morpheus?
 
-{{harness.name}} is a Claude Code project template that ships:
+Morpheus turns Claude Code into a **disciplined orchestration engine**. Instead of freeform AI conversations that lose context and drift off-task, Morpheus enforces a structured workflow: every piece of work is scoped, planned, tracked, verified, and logged.
 
-- A **plan-mode-first orchestration loop** (`/the-protocol`): every Medium+ task enters plan mode, gathers context, fires clarifying `AskUserQuestion` prompts, drafts an implementation plan, and only scaffolds (staging dir, STATE.md, TaskCreate entries, daily-note timeline) AFTER Tyler approves the plan.
-- **Wave/round dispatch** via `/orchestration-dispatch`: sub-agents (gatherer, planner, builder, verifier, documenter, sme-assessor, context-curator) run in waves; an SME assessor verifies each round with external evidence and returns ADVANCE / CONTINUE / FLAG / FAIL verdicts.
-- **17 lifecycle hooks**: SessionStart presence checks, UserPromptSubmit context loading, PreToolUse plan-mode standard injection, PostToolUse INDEX.md auto-update + STATE.md frontmatter validation, Stop-event audit-ledger writes for protocol-execution / task-discipline / plan-compliance / daily-note-logging.
-- **Cross-session resume**: `STATE.md` (per-task) + `HANDOFF.md` (Ultra) + `hub/state/active-tasks.md` (auto-generated) keep work durable across Claude Code restarts.
-- **Pairing with Neo**: when SOC tooling (Sentinel KQL, Defender XDR, Entra, Abnormal, ThreatLocker, Lansweeper, AppOmni) is the right surface, `/neo` delegates the investigation to Goodwin's Claude-powered Neo CLI and logs results back to the daily note.
+It pairs with **Neo** (Goodwin's internal Claude-powered SOC agent) &mdash; Morpheus orchestrates the work, Neo executes the security investigations.
 
-This is the same harness {{user.name}} runs every day at {{company.name}}. Onboarding makes it yours.
+> **Clone it. Run `/onboard`. Start working.** That's it.
 
-## 2. Who is it for?
+---
 
-Goodwin InfoSec teammates who want:
-
-- Reproducible orchestration discipline on Goodwin endpoints (ThreatLocker AllSigned + Storage Control friendly)
-- Plan-first execution with audit-ledger backed enforcement
-- Cross-session task state that survives restarts and context resets
-- A working pattern for pairing Claude Code with internal SOC tooling (Neo, Sentinel, Defender)
-- A starting point for personal harness extension — fork, run `/onboard`, customize
-
-## 3. Quick start
+## Quick Start
 
 ```bash
-git clone https://github.com/Goodwin-InfoSec/Goodwin-InfoSec-Claude-Code-Harness.git
+# 1. Clone the repo
+git clone https://github.com/tetiennegw/Goodwin-InfoSec-Claude-Code-Harness.git
 cd Goodwin-InfoSec-Claude-Code-Harness
-# Open Claude Code in this directory
-# In your first prompt:
+
+# 2. Open Claude Code in this directory
+
+# 3. On your first prompt, run:
 /onboard
 ```
 
-`/onboard` walks you through:
+Onboarding takes ~5 minutes and walks you through identity capture, team setup, optional extensions, directory scaffolding, and dependency validation. When it's done, the harness is fully personalized to you.
 
-1. Identity capture (name, email, role, manager — populates `CLAUDE.md`, `memory/`, `INDEX.md`)
-2. Team capture (peers, lead tools)
-3. Optional extensions: **Neo**, **Planner**, **Codex**, **Signing** — each gated yes/no
-4. Path scaffolding (creates `notes/YYYY/MM/`, `ingest/`, `hub/staging/`, `hub/state/`, `memory/`, etc.)
-5. Seed-file creation (`hub/state/harness-audit-ledger.md` with `LEDGER-APPEND-ANCHOR`, today's daily note with `PREPEND-ANCHOR:v1`, `MEMORY.md` index, etc.)
-6. Dependency bootstrap (Claude Code CLI, Node 18+, Git Bash, PowerShell 7+, optional `jq`, optional Neo binary, optional code-signing cert)
-7. Sentinel stamp (`.harness-onboarded` JSON — gitignored per-user)
+---
 
-Estimated time: ~5 minutes on a clean Goodwin Win11 + Git Bash + Node 18+ box.
+## What You Get
 
-## 4. What you get post-onboarding
+| | Feature | What it does |
+|---|---------|-------------|
+| **Orchestration** | `/the-protocol` | Classifies every request by domain and scope, enters plan mode for Medium+ work, scaffolds task tracking, and hands off to the dispatch loop |
+| **Wave Dispatch** | `/orchestration-dispatch` | Runs sub-agents in waves (gatherer &rarr; planner &rarr; builder &rarr; verifier &rarr; documenter) with SME verification gates between each round |
+| **Task State** | `STATE.md` + `HANDOFF.md` | Per-task living documents that survive context resets, session restarts, and multi-day work. Auto-generated `active-tasks.md` gives you a cross-session dashboard |
+| **Audit Trail** | 17 lifecycle hooks | Protocol-execution audit, task-discipline audit, plan-compliance audit, daily-note logging &mdash; all writing to an append-only ledger |
+| **Daily Notes** | Obsidian-compatible | Rich timeline entries with timestamps, tags, file links, and strategic context. Auto-created on session start |
+| **Neo Integration** | `/neo` | Delegates SOC investigations to Goodwin's 55-tool security agent (Sentinel, Defender, Entra, Abnormal, ThreatLocker, Lansweeper, AppOmni) |
+| **25 Skills** | Slash commands | `/research`, `/eod`, `/checkpoint`, `/ingest-context`, `/incident-triage`, `/second-opinion`, `/weekly-review`, and more |
+| **7 Sub-Agents** | Specialized workers | Gatherer, Planner, Builder, Verifier, Documenter, SME Assessor, Context Curator &mdash; each with defined roles and artifact templates |
 
-- **25 skills** — `/the-protocol`, `/orchestration-dispatch`, `/research`, `/eod`, `/checkpoint`, `/ingest-context`, `/document-feature`, `/weekly-review`, `/second-opinion`, `/incident-triage`, plus the new `/onboard`
-- **17 hooks** — daily-note presence checks, plan-compliance audit, task-discipline audit, protocol-execution audit, `INDEX.md` auto-update, `active-tasks.md` regeneration, etc.
-- **7 sub-agents** — gatherer, planner, builder, verifier, documenter, sme-assessor, context-curator
-- **5 scope patterns** + **9 rules** + **5 protocol profiles** — the doctrine layer
-- **14 templates** for STATE.md, daily notes, plans, research/build/assessment artifacts
+---
 
-## 5. Optional extensions
+## How It Works
 
-Each is opt-in via `/onboard`. Defaults to disabled unless you explicitly enable.
+```
+You type a request
+       |
+       v
+  /the-protocol
+       |
+       +---> Classify domain (security? code? harness? default?)
+       +---> Assess scope (Passthrough / Mini / Small / Medium / Large / Ultra)
+       +---> Enter plan mode (Medium+)
+       +---> Clarifying questions via AskUserQuestion
+       +---> Draft orchestration plan -> you approve
+       |
+       v
+  Scaffold (staging dir, STATE.md, task list, daily note)
+       |
+       v
+  /orchestration-dispatch
+       |
+       +---> Wave 1: Gatherer researches -> SME verifies
+       +---> Wave 2: Planner designs -> SME verifies
+       +---> Wave 3: Builder implements -> SME verifies
+       +---> Wave 4: Verifier validates -> SME verifies
+       +---> Wave 5: Documenter records
+       |
+       v
+  Done. STATE.md updated. Daily note logged. Task archived.
+```
 
-- **Neo** — `/neo` delegates SOC investigations to Goodwin's internal Claude-powered Neo CLI. Requires Neo binary install + `NEO_API_KEY` (or Entra ID via `~/.neo/config.json`). See `docs/morpheus-features/neo-integration.md`.
-- **Planner** — `/sync-planner` two-way syncs `STATE.md` ↔ Microsoft Planner boards. Requires `Microsoft.Graph.Planner` PS module + Goodwin Entra tenant. Per-user board mapping captured at `/onboard` time.
-- **Codex** — `/second-opinion` calls OpenAI Codex CLI for cross-validation on plan and build artifacts. Requires Codex CLI + `OPENAI_API_KEY`.
-- **Signing** — `/sign-script` Authenticode-signs PowerShell hooks with your Goodwin code-signing cert (BYO thumbprint). Required to satisfy ThreatLocker AllSigned policy on Goodwin endpoints. If you don't have a cert, `/onboard` skips signing and configures hooks to run with `ExecutionPolicy=Bypass` instead.
+---
 
-## 6. Documentation
+## Optional Extensions
 
-- `docs/getting-started/` — 4-doc walkthrough (prerequisites, fork-and-customize, first-session, your-first-task)
-- `docs/morpheus-features/` — feature deep-dives (orchestration-loop, hooks-framework, daily-notes-system, task-state-management, north-star-standard, task-discipline-primitive, neo-integration)
-- `docs/architecture/` — conceptual model (overview, agent-definitions, hooks-architecture, orchestration-model, validation-standard)
-- `docs/customization/` — adding-agents, adding-hooks, adding-skills, adding-rules, adding-sme-domains, personalizing-identity
-- `docs/reference/` — artifact-templates, changelog-standard, dispatch-templates, scope-patterns, state-file-spec, tag-taxonomy
+Each is opt-in during `/onboard`. Disabled by default.
 
-## 7. Contributing
+| Extension | What it enables | Requirements |
+|-----------|----------------|--------------|
+| **Neo** | `/neo` &mdash; SOC investigations via Goodwin's Claude security agent | Neo CLI + Entra ID auth (`neo auth login`) |
+| **Planner** | `/sync-planner` &mdash; two-way sync with Microsoft Planner boards | `Microsoft.Graph.Planner` PS module + Entra tenant |
+| **Codex** | `/second-opinion` &mdash; cross-validation via OpenAI Codex CLI | Codex CLI + `OPENAI_API_KEY` |
+| **Signing** | `/sign-script` &mdash; Authenticode-sign PowerShell hooks | Goodwin code-signing cert (BYO thumbprint) |
 
-See `CONTRIBUTING.md` for the fork → customize → upstream-PR flow. Contributions must preserve the 8 north-star invariants (see `docs/morpheus-features/north-star-standard.md`).
+---
 
-## 8. License
+## Prerequisites
 
-PROPRIETARY — Goodwin Procter LLP InfoSec internal use only. See `LICENSE` for full terms. Pending Goodwin Legal review.
+- **Claude Code** &mdash; CLI or desktop app
+- **Git Bash** &mdash; ships with Git for Windows
+- **Node.js 18+** &mdash; required by Claude Code
+- **PowerShell 5.1+** &mdash; ships with Windows 11
+- **Windows 11** &mdash; Goodwin standard endpoint (macOS/Linux: see `docs/reference/cross-os-notes.md`)
 
-## 9. Acknowledgements
+ThreatLocker is handled automatically &mdash; hooks use a bash-fallback writer pattern that works within Goodwin's storage policy. If you have a Goodwin code-signing cert, signing is one command via `/sign-script`.
 
-Built and battle-tested by {{user.name}} ({{user.role}}, {{company.name}} InfoSec) over the 2026-03 → 2026-04 build cycle. Templated for Goodwin InfoSec teammate adoption with manager approval from {{team.manager.name}}.
+---
+
+## Documentation
+
+| Guide | Description |
+|-------|-------------|
+| [`docs/getting-started/`](docs/getting-started/) | 4-part walkthrough: prerequisites, fork & customize, first session, your first task |
+| [`docs/morpheus-features/`](docs/morpheus-features/) | Deep dives: orchestration loop, hooks, daily notes, task state, Neo integration, north-star standard |
+| [`docs/architecture/`](docs/architecture/) | Conceptual model: agents, hooks, orchestration, validation |
+| [`docs/customization/`](docs/customization/) | Adding your own agents, hooks, skills, rules, and SME domains |
+| [`docs/reference/`](docs/reference/) | Artifact templates, dispatch patterns, scope definitions, state file spec |
+
+---
+
+## Project Structure
+
+```
+.claude/
+  agents/       7 sub-agent definitions
+  commands/     25 slash-command skills (including /onboard)
+  hooks/        17 lifecycle hooks (SessionStart, UserPromptSubmit, PostToolUse, Stop)
+  protocols/    5 domain profiles (default, code, harness, security, + schema)
+  rules/        9 auto-loaded rules (hub, daily-note, scripts, task-handling, etc.)
+
+hub/
+  templates/    14 artifact templates (STATE.md, daily-note, plan, research, build, etc.)
+  staging/      Per-task working directories (created by /the-protocol)
+  state/        Cross-session state (active-tasks, audit ledger, metrics, roadmap)
+
+docs/           Getting started, features, architecture, customization, reference
+scripts/        Utility scripts (bash + PowerShell)
+notes/          Daily/weekly/monthly notes (Obsidian-compatible, created by hooks)
+memory/         Persistent cross-session memory (user profile, feedback, project context)
+knowledge/      Team knowledge base articles
+```
+
+---
+
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md). Contributions must preserve the [8 north-star invariants](docs/morpheus-features/north-star-standard.md).
+
+The standard flow: fork &rarr; `/onboard` &rarr; customize &rarr; upstream PR for shared improvements.
+
+---
+
+## License
+
+**Proprietary** &mdash; Goodwin Procter LLP InfoSec internal use only. See [`LICENSE`](LICENSE) for full terms.
+
+---
+
+<div align="center">
+<sub>Built and battle-tested by Goodwin InfoSec over the 2026 Q1-Q2 build cycle. Templated for teammate adoption.</sub>
+</div>
