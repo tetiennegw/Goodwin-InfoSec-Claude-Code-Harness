@@ -1,5 +1,3 @@
-<div align="center">
-
 ```
                                 __
  /'\_/`\                       /\ \
@@ -11,6 +9,8 @@
                             \ \_\
                              \/_/
 ```
+
+<div align="center">
 
 ### Orchestration Discipline for Claude Code
 
